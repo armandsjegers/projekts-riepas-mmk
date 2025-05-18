@@ -11,7 +11,7 @@ def get_user_input():
         'platums': input("platums: ").strip(),
         'augstums': input("augstums: ").strip(),
         'diametrs': input("diametrs: ").strip(),
-        'sezona': input("sezona (Vasara/Ziema/Vissezonas): ").strip().capitalize(),
+        'sezona': input("sezona: ").strip().capitalize(),
         'razotajs': input("ražotājs: ").strip()
     }
     filters = {k: v for k, v in filters.items() if v}
