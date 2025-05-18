@@ -1,91 +1,80 @@
-import logging
-import bs4
-import requests
-import collections
+import time
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger('wb')
+user_filter = {
+    'platums': '205',
+    'augstums': '55',
+    'diametrs': 'R16',
+    'razotajs': 'Michelin',
+}
 
+options = Options()
+options.add_argument("--start-maximized")
+driver = webdriver.Chrome(options=options)
 
-ParseResult = collections.namedtuple(
-    'ParseResult',
-    (
-        'platums',
-        'augstums',
-        'diametrs',
-        'razotajs',
-        'url',
-    ),
-)
+try:
+    driver.get("https://mmkriepas.lv/riepas/vasaras-riepas/")
+    WebDriverWait(driver, 15).until(
+        EC.presence_of_element_located((By.CSS_SELECTOR, 'form.mmk-filter'))
+    )
 
-class Client:
-    def __init__(self):
-        self.session = requests.Session()
-        self.session.headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-            'Accept-Language': 'lv, en;q=0.9',
-        }
-        self.result = []
+    def select_dropdown(label_text, value):
+        max_attempts = 3
+        for attempt in range(max_attempts):
+            try:
+                label_xpath = f'//label[contains(text(), "{label_text}")]/following-sibling::span[contains(@class, "select2-container")]'
+                select_span = WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, label_xpath))
+                )
+                select_span.click()
 
-    def load_page(self):
-        url = 'https://mmkriepas.lv/riepas/vasaras-riepas/'
-        try:
-            res = self.session.get(url=url, timeout=10)
-            res.raise_for_status()
-            return res.text
-        except Exception as e:
-            logger.error(f"Failed to load page: {e}")
-            return None
+                dropdown = WebDriverWait(driver, 10).until(
+                    EC.visibility_of_element_located((By.CSS_SELECTOR, "span.select2-dropdown"))
+                )
 
-    def parse_page(self, text: str):
-        if not text:
-            logger.error("No HTML content to parse")
-            return
+                search_input = WebDriverWait(dropdown, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "input.select2-search__field"))
+                )
+                search_input.clear()
+                search_input.send_keys(value)
+                time.sleep(1)
 
-        try:
-            soup = bs4.BeautifulSoup(text, 'html.parser')
-
-            # Save HTML for debugging
-            with open('debug.html', 'w', encoding='utf-8') as f:
-                f.write(soup.prettify())
-            logger.info("Saved HTML to debug.html")
-
-            # Find the filter form
-            filter_form = soup.select_one('form.mmk-filter')
-            if not filter_form:
-                logger.error("Could not find filter form")
+                option_xpath = f'//li[contains(@class, "select2-results__option") and contains(., "{value}")]'
+                option = WebDriverWait(driver, 10).until(
+                    EC.element_to_be_clickable((By.XPATH, option_xpath))
+                )
+                option.click()
+                print(f"✅ Selected {label_text}: {value}")
+                time.sleep(1)
                 return
+            except Exception as e:
+                if attempt == max_attempts - 1:
+                    raise
+                print(f"⚠️ Attempt {attempt + 1} failed for {label_text}. Retrying...")
+                time.sleep(2)
 
-            # Find all filter blocks
-            filter_blocks = filter_form.select('.mmk-product-filter-block')
-            logger.info(f"Found {len(filter_blocks)} filter blocks")
+    select_dropdown('Platums', user_filter['platums'])
+    select_dropdown('Augstums', user_filter['augstums'])
+    select_dropdown('Diametrs', user_filter['diametrs'])
 
-            for block in filter_blocks:
-                self.parse_block(block=block)
+    if user_filter['razotajs']:
+        select_dropdown('Ražotājs', user_filter['razotajs'])
 
-        except Exception as e:
-            logger.error(f"Parsing failed: {e}")
+    search_btn = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.CSS_SELECTOR, 'button[type="submit"].mmk-product-filters__search-button'))
+    )
+    search_btn.click()
+    print("Search triggered.")
 
-    def parse_block(self, block):
-        label = block.select_one('.mmk-product-filter-block__label')
-        label_text = label.get_text(strip=True) if label else "No label"
+    WebDriverWait(driver, 15).until(
+        EC.presence_of_element_located((By.CSS_SELECTOR, '.mmk-product-list'))
+    )
+    print("Results loaded successfully!")
+    time.sleep(10)
 
-        select = block.select_one('select')
-        options = []
-        if select:
-            options = [option.get_text(strip=True) for option in select.find_all('option') if
-                       option.get('value') != '0']
-
-        logger.info(f"Filter: {label_text}")
-        logger.info(f"Options: {options}")
-        logger.info('=' * 50)
-
-        url_block = block.select_one('a.mmk-product-filter-block__label')
-        if not url_block:
-            logger.error("no url_block")
-            return
-        url = url_block.get('href')
-        if not url:
-            logger.error("no href")
-            return
-        logger.info('%s', url)
+finally:
+    driver.quit()
