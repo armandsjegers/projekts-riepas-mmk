@@ -12,6 +12,8 @@
 * Veikt meklēšanu pēc norādītajiem kritērijiem
 
 * Parādīt meklēšanas rezultātus
+  
+* Atvieglot datu tālāku apstrādi vai analīzi (piemēram, Excel/Google Sheets)
 
 Programma ir paredzēta lietotājiem, kas vēlas ātri un efektīvi atrast piemērotas riepas pēc precīziem izmēriem un citiem parametriem, izvairoties no manuālas meklēšanas veikšanas vietnē.
 
@@ -26,15 +28,19 @@ Programma ir paredzēta lietotājiem, kas vēlas ātri un efektīvi atrast piem�
 
 **Time** - izmantota paužu ieviešanai starp darbībām, lai nodrošinātu, ka visas lapas komponentes ir pareizi ielādējušās pirms ar tām mijiedarbosies.
 
-**WebDriverWait** un **Expected** Conditions - Selenium komponentes, kas palīdz gaidīt noteiktu elementu parādīšanos vai kļūšanu interaktīvu pirms turpināt izpildi. Tas ir būtiski, jo mūsdienu web lapas bieži izmanto asinhronu ielādi.
+**WebDriverWait** un **Expected Conditions** - Selenium komponentes, kas palīdz gaidīt noteiktu elementu parādīšanos vai kļūšanu interaktīvu pirms turpināt izpildi. Tas ir būtiski, jo mūsdienu web lapas bieži izmanto asinhronu ielādi. 
+
+**csv** - ļauj saglabāt datus csv failā, un pēc tam eksportēt citas programmās. (piemēram, Excel vai Google Sheets)
 
 ## Datu struktūras
 Projektā tiek izmantota šāda lietotāja definēta datu struktūra:
-
+```python
 filters = {'platums': '', 'augstums': '', 'diametrs': '', 'sezona': '', 'razotajs': ''}
-
+```
 Šī vārdnīca tiek izmantota, lai saglabātu lietotāja ievadītos meklēšanas parametrus. Pēc ievades, tiek veikta šīs struktūras attīrīšana, noņemot tukšos laukus:
+```python
 filters = {k: v for k, v in filters.items() if v}
+```
 Šī pieeja ļauj elastīgi apstrādāt dažādu skaitu ievades parametrus un nodrošina, ka meklēšana tiek veikta tikai pēc norādītajiem kritērijiem.
 Programmatūras izmantošanas metodes
 ## Lietotāja saskarne:
@@ -53,7 +59,7 @@ Tiek atvērta MMKriepas.lv riepu meklēšanas lapa
 
 Programma pārbauda, vai meklēšanas forma ir pieejama pirms turpināšanas
 
-## Formas aizpildīšana:
+**Formas aizpildīšana:**
 
 Katram ievades parametram tiek atrasts atbilstošais izvēles lauks
 
@@ -63,7 +69,7 @@ Tiek meklēta un atlasīta atbilstošā opcija no nolaižamā saraksta
 
 Pēc veiksmīgas izvēles tiek veikta 1 sekundes pauze
 
-## Meklēšanas rezultāti:
+**Meklēšanas rezultāti:**
 
 Pēc visu parametru ievades tiek noklikšķināts uz meklēšanas pogas
 
@@ -71,7 +77,7 @@ Programma gaidīs rezultātu ielādi un pēc tam paliks atvērta, lai lietotājs
 
 Ja rodas kļūda, programma informē lietotāju un paliek atvērta kļūdas analīzei
 
-## Ievades parametru apstrāde
+**Ievades parametru apstrāde**
 Programma veic šādas ievades datu pārbaudes un transformācijas:
 
 * Sezonas parametrs tiek pārveidots ar pirmo lielo burtu (capitalize())
@@ -80,7 +86,7 @@ Programma veic šādas ievades datu pārbaudes un transformācijas:
 
 * Pārbauda, vai vismaz viens meklēšanas parametrs ir norādīts
 
-## Kļūdu apstrāde
+**Kļūdu apstrāde**
 Programma izmanto izņēmumu apstrādi, lai:
 
 * Uztvertu un apstrādātu laika noilguma kļūdas
@@ -88,9 +94,10 @@ Programma izmanto izņēmumu apstrādi, lai:
 * Paziņotu lietotājam, ja nevar atrast vai atlasīt kādu no meklēšanas parametriem
 
 * Paziņotu par kritisku kļūdu, ja nevar ielādēt meklēšanas lapu vai veikt meklēšanu
-
+**Rezultātu saglabāšana:**
+  * Iegūtie dati tiek ierakstīti CSV failā.
 ## Video demonstrācija
-Saite uz video demonstrāciju - šeit var ievietot saiti uz video, kurā redzama programmas darbība. Video parāda:
+Saite uz video demonstrāciju (https://rtucloud1-my.sharepoint.com/:v:/g/personal/armands_jegers_edu_rtu_lv/ERq909TxzM5Iswsv7eoBTNgBrVRKeNceeuerM9UQh2U5O) **Video parāda:**
 
 * Lietotāja ievades procesu
 
@@ -99,6 +106,8 @@ Saite uz video demonstrāciju - šeit var ievietot saiti uz video, kurā redzama
 * Formas aizpildīšanu
 
 * Meklēšanas rezultātu parādīšanos
+
+* CSV saglabāšanu 
 
 ## Papildu piezīmes:
 Projektā turpmākie iespējamie papildinājumi :
