@@ -55,17 +55,22 @@ def extract_results(driver):
     products = WebDriverWait(driver, 30).until(
         EC.presence_of_all_elements_located((By.CSS_SELECTOR, "ul.products li.product"))
     )
-
     results = []
     for product in products:
         try:
             title = product.find_element(By.CSS_SELECTOR, '.woocommerce-loop-product__title').text.strip()
             price = product.find_element(By.CSS_SELECTOR, '.price span.woocommerce-Price-amount').text.strip()
-            results.append({'Title': title, 'Price': price})
+            results.append({'Title': title, 'Price': format_price(price)})
         except Exception:
             print("error")
-
     return results
+
+def format_price(price):
+    try:
+        numeric_price = ''.join(filter(str.isdigit, price))
+        return "{:,.2f}".format(int(numeric_price) / 100)
+    except ValueError:
+        return price
 
 def save_to_csv(data, filename='results.csv'):
     if not data:
