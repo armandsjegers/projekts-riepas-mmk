@@ -1,10 +1,10 @@
 import time
+import csv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
 
 def get_user_input():
     filters = {
@@ -15,19 +15,18 @@ def get_user_input():
         'razotajs': input("ražotājs: ").strip()
     }
     filters = {k: v for k, v in filters.items() if v}
-
     if not filters:
-        print("\nvisi lauki nevar but tukši!")
+        print("\nvisi lauki nedrikst but tuksi")
         return get_user_input()
 
     return filters
-
 
 def select_dropdown(driver, label_text, value):
     try:
         label_xpath = f'//label[contains(text(), "{label_text}")]/following-sibling::span[contains(@class, "select2-container")]'
         select_span = WebDriverWait(driver, 10).until(
-            EC.element_to_be_clickable((By.XPATH, label_xpath)))
+            EC.element_to_be_clickable((By.XPATH, label_xpath))
+        )
         select_span.click()
 
         dropdown = WebDriverWait(driver, 10).until(
@@ -48,15 +47,58 @@ def select_dropdown(driver, label_text, value):
         option.click()
         time.sleep(1)
         return True
-    except Exception as e:
-        print(f"error {label_text}: {str(e)}")
+    except Exception:
+        print(f"error {label_text}")
         return False
 
+def extract_results(driver):
+    products = WebDriverWait(driver, 30).until(
+        EC.presence_of_all_elements_located((By.CSS_SELECTOR, "ul.products li.product"))
+    )
+
+    results = []
+    for product in products:
+        try:
+            title = product.find_element(By.CSS_SELECTOR, '.woocommerce-loop-product__title').text.strip()
+            price = product.find_element(By.CSS_SELECTOR, '.price span.woocommerce-Price-amount').text.strip()
+            results.append({'Title': title, 'Price': price})
+        except Exception:
+            print("error")
+
+    return results
+
+def save_to_csv(data, filename='results.csv'):
+    if not data:
+        print("error")
+        return
+
+    file_exists = False
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            file_exists = True
+    except FileNotFoundError:
+        pass
+
+    with open(filename, mode='a', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=data[0].keys())
+
+        if not file_exists:
+            writer.writeheader()
+
+        writer.writerows(data)
+
+    print(f"rezultati saglabati {filename}")
 
 def main():
     user_filter = get_user_input()
+
     options = Options()
     options.add_argument("--start-maximized")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--no-sandbox")
+    options.add_argument("--disable-gpu")
+    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
+
     driver = webdriver.Chrome(options=options)
 
     try:
@@ -84,26 +126,22 @@ def main():
             )
             search_btn.click()
 
-            try:
-                WebDriverWait(driver, 20).until(  # Increased timeout
-                    EC.visibility_of_element_located((By.CSS_SELECTOR, '.mmk-product-item'))
-                )
-                while True:
-                    time.sleep(10)
-            except Exception as e:
-                print(f"\nerror loading result: {str(e)}")
-                while True:
-                    time.sleep(10)
+            WebDriverWait(driver, 30).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, "ul.products li.product"))
+            )
+
+            time.sleep(3)
+
+            results = extract_results(driver)
+            save_to_csv(results)
         else:
-            print("\nerror")
-            while True:
-                time.sleep(10)
+            print("filter error")
 
-    except Exception as e:
-        print(f"\nKritiskā kļūda: {str(e)}")
-        while True:
-            time.sleep(10)
+    except Exception:
+        print("error")
 
+    finally:
+        input("press enter to exit...")
 
 if __name__ == "__main__":
     main()
